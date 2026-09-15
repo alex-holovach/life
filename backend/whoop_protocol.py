@@ -101,6 +101,32 @@ def decode(raw):
             value = struct.unpack_from("<f", raw, i)[0]
             if math.isfinite(value):
                 f[f"f32_{i}_candidate"] = value
+    elif raw[4] == 47 and raw[5] == 25 and len(raw) == 84:
+        # Harvard 41.17.4.0 serializes one initial int32 optical sample and
+        # 24 saturated int16 differences. Wavelength and clinical use are not
+        # established. Generic inventory does not attest the device firmware.
+        d.update(layout="history_optical_r25_candidate", validation="research_layout_unverified")
+        clock(11)
+        f.update(sequence_raw=u32(7), subsecond_raw=u16(15), u16_17_raw=u16(17),
+                 initial_optical_raw=struct.unpack_from('<i', raw, 19)[0],
+                 u16_75_raw=u16(75), u8_77_raw=raw[77], u8_78_raw=raw[78])
+        if f['subsecond_raw'] >= 32768:
+            d['time_status'] = 'invalid_subsecond_clock'
+        motion = struct.unpack_from('<f', raw, 71)[0]
+        if math.isfinite(motion):
+            f['f32_71_candidate'] = motion
+        deltas = list(struct.unpack_from('<24h', raw, 23))
+        d['optical_deltas_raw'] = deltas
+        f['clipped_difference_count'] = sum(x in (-32768, 32767) for x in deltas)
+        d['waveform_quality'] = ('clipped_differences' if f['clipped_difference_count']
+                                 else 'encoding_intact_not_signal_validated')
+        # A saturated difference loses amplitude; every following cumulative
+        # value can be wrong. Preserve the words but do not invent that waveform.
+        if not f['clipped_difference_count']:
+            values = [f['initial_optical_raw']]
+            for delta in deltas:
+                values.append(values[-1] + delta)
+            d['waveforms']['optical_raw'] = values
     elif raw[4] == 43 and raw[5] in (10, 11) and len(raw) in (1928, 1932):
         d.update(layout="raw_imu_candidate", validation="research_layout_unverified")
         clock(11)

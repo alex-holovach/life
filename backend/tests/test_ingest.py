@@ -68,6 +68,27 @@ def test_sensor_inventory_replay_late_arrival_auth_and_no_unvalidated_metrics(cl
     assert not rows()
 
 
+def test_optical_inventory_preserves_clipping_and_never_exports_health_metrics(client):
+    import base64
+    from test_protocol import optical_frame, seal
+    now = time.time()
+    intact = capture(source='wire_frame', batteryPercent=None, quality='crc_valid',
+                     receivedAt=now, rawBase64=base64.b64encode(seal(optical_frame())).decode())
+    assert post(client, intact).status_code == 204
+    sensor, = client.get('/v1/sensors', headers=headers()).json()['sensors']
+    assert sensor['decoded']['waveforms']['optical_raw']['count'] == 25
+    clipped = intact | dict(id='clipped-optical', receivedAt=now+1,
+                            rawBase64=base64.b64encode(seal(optical_frame([32767]*24))).decode())
+    assert post(client, clipped).status_code == 204
+    assert post(client, clipped).status_code == 204
+    sensor, = client.get('/v1/sensors', headers=headers()).json()['sensors']
+    assert sensor['frames'] == 2
+    assert sensor['decoded']['waveform_quality'] == 'clipped_differences'
+    assert not sensor['decoded']['waveforms']
+    assert sensor['decoded']['optical_deltas_raw'] == [32767]*24
+    assert not rows()
+
+
 def test_storage_failure_never_acknowledges(client, monkeypatch):
     def fail(*args): raise OSError("simulated full disk")
     monkeypatch.setattr(storage.os, "fsync", fail)

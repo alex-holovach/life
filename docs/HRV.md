@@ -64,6 +64,11 @@ counterexamples, not acceptance criteria. A replacement continuity algorithm nee
 additional evidence about output gating and publication timing, followed by fault
 injection and raw-record replay. Its numerical results must use a new version.
 
+The [optical firmware verifier](OPTICAL.md) additionally establishes a 30-block
+rolling maximum in the output gate. One high block can suppress the next 29 low
+blocks. R25 contains intermittent optical snippets, but does not publish the
+peak-position cursor or directly prove that R24 beats were uninterrupted.
+
 ## Calculation and gates
 
 `RMSSD = sqrt(mean((interval[i] - interval[i-1])²))`, in milliseconds.

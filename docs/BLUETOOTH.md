@@ -92,7 +92,7 @@ R24 fields are little-endian. R24 is packet type `0x2F`, revision `24`, length `
 | Motion channels | `0x2B`, revision `10/11`, length `1928/1932`: six candidate 100-sample signed arrays | Research only. Axis labels, sample rate and conversion to g or degrees/s are not validated. |
 | Optical waveforms | `0x2B`, revision `21`, length `1244`: six candidate 100-sample unsigned arrays | Research only. No confirmed red/infrared waveform pair or independent saturation calculation. |
 | Alternate interval layout | `0x2B`, revision `17`: bounded interval array | Research only. Units, ordering and device support remain unverified. |
-| R25 stored history | `0x2F`, revision `25`, length `84` | Counter checked for transfer continuity; payload archived without health decoding. |
+| R25 stored optical history | `0x2F`, revision `25`, length `84`: initial int32 at `19`, 24 int16 differences at `23` | Research waveform reconstruction; clipped records withheld. A zero-extended uint16 counter wraps at 65536. [Layout and limitations](OPTICAL.md). |
 | Events, metadata, command replies and unknown layouts | `0x30`, `0x31`, `0x24` and other complete frames | Preserve payloads and known IDs. Only specific verified response schemas drive behavior. |
 
 Normal collection does not enable continuous raw motion/optical streaming. The app

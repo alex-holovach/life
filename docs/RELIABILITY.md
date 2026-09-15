@@ -44,6 +44,12 @@ Its status reports history progress separately from uploading. Connection/recove
 are durably archived; locally generated diagnostics do not count as fresh strap traffic
 in the backend stale-data check.
 
+R25 carries a zero-extended 16-bit counter, unlike R24's 32-bit counter. A rollover
+from 65535 to zero now passes continuity checks; a skipped value still blocks ACK.
+Unexpected nonzero high bits remain an unsupported layout. This fixes a reproduced
+counter-boundary failure, not every reason for a dropped connection. The
+[firmware optical verifier](OPTICAL.md) executes the original counter truncation.
+
 ## Device checks
 
 Short device tests observed history advancing only after durable storage, recovery

@@ -133,6 +133,32 @@ final class HistoryTransferTests: XCTestCase {
         XCTAssertEqual(transfer.check(at: 731), .abort("history_timeout"))
     }
 
+    func testOpticalHistoryCounterWrapsAt16BitsWithoutHidingMissingRecords() throws {
+        func optical(_ counter: UInt32) throws -> Frame {
+            var data = [UInt8](repeating: 0, count: 73)
+            data.replaceSubrange(0..<4, with: WhoopWire.littleEndian(counter))
+            return try frame(47, 25, 0, data)
+        }
+        var transfer = HistoryTransfer(); transfer.begin(at: 0)
+        _ = try transfer.accept(frame(49, 1, 1, []), at: 0) {}
+        var saved = 0
+        for counter: UInt32 in [65534, 65535, 0, 1] {
+            XCTAssertEqual(try transfer.accept(optical(counter), at: 1) { saved += 1 }, .none)
+        }
+        XCTAssertEqual(saved, 4)
+        XCTAssertEqual(try transfer.accept(end(), at: 2) {}, .ack([1, 5, 0, 0, 0, 24, 0, 0, 0]))
+
+        transfer.begin(at: 3)
+        _ = try transfer.accept(frame(49, 1, 1, []), at: 3) {}
+        _ = try transfer.accept(optical(65535), at: 4) {}
+        XCTAssertEqual(try transfer.accept(optical(1), at: 5) {}, .abort("record_gap"))
+        XCTAssertEqual(transfer.lastGap?.expected, 0)
+
+        transfer.begin(at: 6)
+        _ = try transfer.accept(frame(49, 1, 1, []), at: 6) {}
+        XCTAssertEqual(try transfer.accept(optical(65536), at: 7) {}, .abort("unknown_history_layout"))
+    }
+
     func testHistoryRecoveryRetriesDroppedPacketsWithBoundedBackoff() throws {
         var recovery = HistoryRecovery()
         XCTAssertTrue(recovery.failed("record_gap", at: 10))

@@ -55,6 +55,7 @@ All offsets below are absolute in the framed packet, including the four-byte hea
 | 0x24 responses | Command ID and raw prefix | Command-specific status/response schemas |
 | 0x31 metadata | Metadata code, original frame | History sequence/ACK validation |
 | 0x2F / v24 / 104 bytes | HR, raw intervals, raw sensor words; firmware-gated skin temperature in temperature.py | Independent HRV accuracy and remaining sensor labels |
+| 0x2F / v25 / 84 bytes | Initial optical sample plus 24 differences; reconstruct only without saturation | [Firmware trace](OPTICAL.md); wavelength, exact sample timing and health use remain unvalidated |
 | 0x2B / v10–11 / 1928–1932 bytes | Six candidate 100-sample signed channels | Record discrimination, sample rates, axes, g/dps scaling |
 | 0x2B / v21 / 1244 bytes | Six candidate 100-sample unsigned optical channels | Channel identities, sample rate, calibration |
 | 0x2B / v17 | Bounded interval words | Hardware support, length, ordering, units |
@@ -120,5 +121,5 @@ Research claims about other straps or firmware remain candidate mappings until v
 
 See [TEMPERATURE.md](TEMPERATURE.md) for the MAX30208 firmware evidence, raw
 fields and the firmware-derived Celsius decoder. The earlier history fix checks v24
-and v25 counters separately, archives both before ACK, and leaves v25 uninterpreted.
-
+and v25 counters separately and archives both before ACK. R25 now has an offline
+research waveform decoder; see [stored optical waveform research](OPTICAL.md).

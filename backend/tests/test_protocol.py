@@ -87,3 +87,57 @@ def test_waveforms_are_bounded_raw_samples_not_calibrated_values(kind,version,si
     assert all(k.endswith("_raw") for k in d["waveforms"])
     raw[5] = 255
     assert not decode(seal(raw))["waveforms"]
+
+
+def optical_frame(deltas=None):
+    raw = frame(47, 25, 84)
+    struct.pack_into('<IIHH', raw, 7, 12345, 1700000000, 1234, 4321)
+    struct.pack_into('<i24h', raw, 19, 1000000, *(deltas or [100, -50] * 12))
+    struct.pack_into('<fHBB', raw, 71, .0125, 2345, 2, 1)
+    return raw
+
+
+def test_r25_reconstructs_a_single_raw_channel_without_inventing_health_values():
+    d = decode(seal(optical_frame()))
+    assert d['layout'] == 'history_optical_r25_candidate'
+    assert d['validation'] == 'research_layout_unverified'
+    assert d['device_time_raw'] == 1700000000
+    assert d['fields']['sequence_raw'] == 12345
+    assert d['fields']['subsecond_raw'] == 1234
+    samples = d['waveforms']['optical_raw']
+    assert len(samples) == 25
+    assert samples[:5] == [1000000, 1000100, 1000050, 1000150, 1000100]
+    assert samples[-1] == 1000600
+    assert d['optical_deltas_raw'] == [100, -50] * 12
+    assert d['fields']['clipped_difference_count'] == 0
+    assert d['fields']['u8_77_raw'] == 2
+    assert d['fields']['u8_78_raw'] == 1
+    assert not any(k in d['fields'] for k in ('hrv_ms', 'spo2', 'breaths_per_minute'))
+
+
+@pytest.mark.parametrize('limit', [-32768, 32767])
+def test_r25_clipped_differences_preserve_words_but_withhold_waveform(limit):
+    deltas = [100] * 24
+    deltas[11] = limit
+    d = decode(seal(optical_frame(deltas)))
+    assert d['waveform_quality'] == 'clipped_differences'
+    assert d['fields']['clipped_difference_count'] == 1
+    assert d['optical_deltas_raw'] == deltas
+    assert d['fields']['initial_optical_raw'] == 1000000
+    assert not d['waveforms']
+
+
+def test_r25_rejects_bad_crc_and_does_not_inherit_layout_or_clock_validity():
+    raw = optical_frame()
+    raw[71:75] = struct.pack('<f', float('nan'))
+    struct.pack_into('<H', raw, 15, 65535)
+    d = decode(seal(raw))
+    assert 'f32_71_candidate' not in d['fields']
+    assert d['time_status'] == 'invalid_subsecond_clock'
+    assert 'sample_at' not in d
+    broken = bytearray(seal(raw)); broken[23] ^= 1
+    assert decode(broken) is None
+    for size in range(84):
+        assert decode(seal(raw)[:size]) is None
+    raw[5] = 26
+    assert decode(seal(raw))['layout'] == 'unknown'

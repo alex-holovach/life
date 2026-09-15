@@ -71,9 +71,16 @@ public struct HistoryTransfer {
                 || (frame.version == 25 && frame.payload.count == 73)
             guard knownSize else { return abort("unknown_history_layout") }
             let counter = WhoopWire.u32(frame.payload, 0)
-            if let previous = lastCounters[frame.version], counter != previous &+ 1 {
-                lastGap = Gap(version: frame.version, expected: previous &+ 1, received: counter)
-                return abort("record_gap")
+            // Harvard R25 zero-extends a uint16 capture counter into this word.
+            // R24 retains its uint32 counter. Never mask unexpected high bits.
+            let mask: UInt32 = frame.version == 25 ? 0xffff : .max
+            guard counter <= mask else { return abort("unknown_history_layout") }
+            if let previous = lastCounters[frame.version] {
+                let expected = (previous &+ 1) & mask
+                if counter != expected {
+                    lastGap = Gap(version: frame.version, expected: expected, received: counter)
+                    return abort("record_gap")
+                }
             }
             lastCounters[frame.version] = counter; records += 1
         } else if frame.type == 0x31 {
