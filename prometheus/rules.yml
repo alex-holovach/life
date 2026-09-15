@@ -1,0 +1,28 @@
+groups:
+  - name: life-whoop
+    rules:
+      - alert: LifeCollectorUnavailable
+        expr: up{job="life"} == 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Life ingestion is unavailable"}
+      - alert: LifeWHOOPDataOverdue
+        expr: time() - whoop_last_received_timestamp_seconds > 3600
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "WHOOP data is overdue; check Bluetooth, uploads, and charge"}
+      - alert: LifeWHOOPRecharge
+        expr: last_over_time(whoop_battery_percent[1h]) <= 20 and on(device) (time() - whoop_battery_last_observed_timestamp_seconds < 600)
+        for: 1m
+        labels: {severity: warning}
+        annotations: {summary: "WHOOP battery is low on a fresh cross-checked reading"}
+      - alert: LifeExportNeedsReview
+        expr: whoop_export_blocked_samples > 0 or whoop_export_conflicts > 0
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Archived Life samples require export review"}
+      - alert: LifeExportStalled
+        expr: whoop_export_pending_samples > 0
+        for: 30m
+        labels: {severity: warning}
+        annotations: {summary: "Life has had samples pending in its Prometheus queue for 30 minutes"}

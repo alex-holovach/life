@@ -1,0 +1,23 @@
+.build/
+.swiftpm/
+*.xcodeproj/
+.DS_Store
+.env
+.venv/
+__pycache__/
+.pytest_cache/
+data/
+build/
+*.sqlite*
+
+.runtime/
+backups/
+secrets/
+work/
+.env.*
+!.env.example
+
+Config/Local.xcconfig
+
+# Personal health screenshots stay local.
+/docs/screenshots/

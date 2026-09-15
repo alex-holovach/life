@@ -1,0 +1,5 @@
+// Copy to Local.xcconfig and enter your own signing values. Never commit it.
+PRODUCT_BUNDLE_IDENTIFIER = your.unique.life
+DEVELOPMENT_TEAM =
+// Optional. You can instead set the backend URL in the app.
+LIFE_INGESTION_URL =

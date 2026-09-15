@@ -1,0 +1,4 @@
+PRODUCT_BUNDLE_IDENTIFIER = local.life.collector
+DEVELOPMENT_TEAM =
+LIFE_INGESTION_URL =
+#include? "Local.xcconfig"

@@ -1,0 +1,129 @@
+name: ${COMPOSE_PROJECT_NAME:-life}
+x-service: &service
+  restart: unless-stopped
+  labels:
+    local.life.config-revision: ${LIFE_CONFIG_REVISION:-manual}
+  logging:
+    driver: json-file
+    options: {max-size: "10m", max-file: "3"}
+  security_opt: ["no-new-privileges:true"]
+services:
+  api:
+    <<: *service
+    build: backend
+    image: life-backend:local
+    user: "${LIFE_UID:-1000}:${LIFE_GID:-1000}"
+    init: true
+    environment:
+      DATA_DIR: /data
+      INGEST_TOKEN_FILE: /run/secrets/ingest_token
+      BACKLOG_DAYS: ${BACKLOG_DAYS:-30}
+    secrets: [ingest_token]
+    volumes: ["./data/ingest:/data"]
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+      start_period: 20s
+  worker:
+    <<: *service
+    image: life-backend:local
+    pull_policy: never
+    user: "${LIFE_UID:-1000}:${LIFE_GID:-1000}"
+    init: true
+    command: ["/app/.venv/bin/python", "worker.py"]
+    environment:
+      DATA_DIR: /data
+      BACKLOG_DAYS: ${BACKLOG_DAYS:-30}
+      PROMETHEUS_WRITE_URL: http://prometheus:9090/api/v1/write
+    volumes: ["./data/ingest:/data"]
+    depends_on:
+      api: {condition: service_healthy}
+      prometheus: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "worker.py", "--health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 45s
+  analysis:
+    <<: *service
+    image: life-backend:local
+    pull_policy: never
+    user: "${LIFE_UID:-1000}:${LIFE_GID:-1000}"
+    init: true
+    command: ["/app/.venv/bin/python", "hrv_analysis.py"]
+    environment:
+      DATA_DIR: /data
+    volumes: ["./data/ingest:/data"]
+    depends_on:
+      api: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "hrv_analysis.py", "--health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+  prometheus:
+    <<: *service
+    image: prom/prometheus:v3.14.0
+    user: "${LIFE_UID:-1000}:${LIFE_GID:-1000}"
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=${RETENTION_DAYS:-365}d
+      - --web.enable-remote-write-receiver
+      # Snapshot API is reachable only on localhost / the private Compose network.
+      - --web.enable-admin-api
+    ports: ["127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"]
+    volumes:
+      - ./data/prometheus:/prometheus
+      - ./.runtime/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules.yml:/etc/prometheus/rules.yml:ro
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9090/-/ready"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+  grafana:
+    <<: *service
+    image: grafana/grafana:13.2.1
+    user: "${LIFE_UID:-1000}:${LIFE_GID:-1000}"
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD__FILE: /run/secrets/grafana_password
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_SERVER_ROOT_URL: ${PUBLIC_URL:-http://localhost:8788}
+    secrets: [grafana_password]
+    volumes:
+      - ./data/grafana:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/etc/life/dashboards:ro
+    depends_on:
+      prometheus: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:3000/api/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+  gateway:
+    <<: *service
+    image: nginx:1.28.2-alpine
+    ports: ["127.0.0.1:${GATEWAY_PORT:-8788}:8080"]
+    # Mount the directory so Git's atomic file replacement is visible on reload.
+    volumes: ["./gateway:/etc/nginx/conf.d:ro"]
+    depends_on:
+      api: {condition: service_healthy}
+      grafana: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 4
+secrets:
+  ingest_token: {file: ./secrets/ingest_token}
+  grafana_password: {file: ./secrets/grafana_password}

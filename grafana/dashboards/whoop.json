@@ -1,0 +1,2433 @@
+{
+  "uid": "life-whoop",
+  "title": "Life \u00b7 WHOOP",
+  "schemaVersion": 41,
+  "version": 2,
+  "tags": [
+    "life",
+    "whoop"
+  ],
+  "timezone": "browser",
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "refresh": "30s",
+  "panels": [
+    {
+      "id": 18,
+      "title": "HRV \u00b7 last qualifying",
+      "description": "Last qualifying five-minute PPG RMSSD from the past 24 hours, shown with its original measurement age. This is not a live reading or whole-night HRV. Requires 98\u2013102% pulse coverage, continuous history, artifact and adjacent-pair checks. The live readiness metric still expires after 15 minutes. Not ECG-validated.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_hrv_last_qualified_rmssd_ms and on(device,algorithm) (time() - whoop_hrv_last_qualified_end_timestamp_seconds < 86400)",
+          "legendFormat": "RMSSD",
+          "range": false,
+          "instant": true
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_hrv_last_qualified_end_timestamp_seconds",
+          "legendFormat": "Age",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#D3F5AE"
+          },
+          "noValue": "No qualifying reading in 24h",
+          "unit": "ms",
+          "decimals": 0
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Age"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value_and_name",
+        "justifyMode": "center",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 19,
+      "title": "Strain \u00b7 Life",
+      "description": "Life cardio strain, not WHOOP strain: Edwards load from recorded heart rate and your configured maximum, mapped logarithmically to 0\u201321. See coverage; missing time contributes no load. Set maximum HR in Life. No age-based defaults. See docs/SCORING.md.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_strain_score and on(device) (life_strain_ready == 1)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#FF8F78"
+          },
+          "noValue": "Set max HR in Life; record 10 min",
+          "unit": "suffix: / 21",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 20,
+      "title": "Sleep \u00b7 duration score",
+      "description": "Self-reported sleep duration minus awake time / your configured sleep target, capped at 100%. This is a duration score, not inferred sleep quality or sleep stages. Log sleep in Life. Latest completed session expires after 36 hours.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_score and on(device) (life_sleep_score_ready == 1)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#BFB8F5"
+          },
+          "noValue": "Log sleep and set target in Life",
+          "unit": "percent",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none",
+        "textMode": "value",
+        "justifyMode": "center",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 40,
+      "title": "Stored history delay",
+      "description": "Age of the latest indexed WHOOP history record. Live HR can remain current while stored history is delayed. HRV, breathing, temperature and overnight summaries depend on this history.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 4,
+        "w": 12,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_history_last_sample_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "noValue": "Waiting for stored history",
+          "unit": "s",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              },
+              {
+                "color": "orange",
+                "value": 600
+              },
+              {
+                "color": "red",
+                "value": 1800
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 41,
+      "title": "Analysis queue",
+      "description": "HRV and breathing windows awaiting calculation or recalculation. Existing downloaded data is processed before the analyzer returns to its idle interval.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_analysis_pending_windows",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 42,
+      "title": "Stored records \u00b7 24h",
+      "description": "Fraction of the past 24 hours covered by consecutive, nonconflicting history records. Missing time and sequence gaps are excluded. This is data availability, not sensor accuracy.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 6,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_history_record_coverage_24h_ratio",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#A3B0A6"
+          },
+          "noValue": "Analysis unavailable",
+          "unit": "percentunit",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 43,
+      "title": "HRV \u00b7 qualified coverage 24h",
+      "description": "Union of qualifying five-minute HRV windows over the past 24 hours. Overlapping windows count their covered time once. This is availability, not a medical confidence score.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 7,
+        "w": 6,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_hrv_qualified_coverage_24h_ratio",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#A3B0A6"
+          },
+          "noValue": "Analysis unavailable",
+          "unit": "percentunit",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 44,
+      "title": "Breathing \u00b7 qualified coverage 24h",
+      "description": "Union of qualifying estimated-breathing segments over the past 24 hours. A zero means no segment passed the existing signal rules, not zero breaths.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 6,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_respiratory_rate_qualified_coverage_24h_ratio",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#A3B0A6"
+          },
+          "noValue": "Analysis unavailable",
+          "unit": "percentunit",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 45,
+      "title": "HRV \u00b7 continuity-limited windows",
+      "description": "Number of analyzed windows in the past 24 hours failing the adjacent-pair requirement. Includes other possible failures. Empty batches can be legitimate at low HR or withheld by the device; no intervals are joined across them.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 7,
+        "w": 6,
+        "h": 3
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_hrv_pair_limited_windows_24h",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#A3B0A6"
+          },
+          "noValue": "Analysis unavailable",
+          "unit": "short",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 21,
+      "title": "Breathing \u00b7 last estimate",
+      "description": "Last qualifying pulse-derived breathing estimate from the past 24 hours, with its original measurement age. Requires at least 90 contiguous seconds, 98\u2013102% pulse coverage, artifact checks and consistent spectral/autocorrelation estimates. No computed device breathing-rate field has been identified. More recording time alone does not guarantee a qualifying signal. Not reference-validated.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "(whoop_respiratory_rate_last_qualified_breaths_per_minute and on(device,algorithm) (time() - whoop_respiratory_rate_last_qualified_end_timestamp_seconds < 86400)) or on(device,algorithm) (-whoop_respiratory_rate_signal_status)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#D3F5AE"
+          },
+          "noValue": "Analysis unavailable",
+          "unit": "suffix: breaths/min",
+          "decimals": 0,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "No qualifying recording"
+                },
+                "-1": {
+                  "text": "Awaiting result"
+                },
+                "-2": {
+                  "text": "Reading expired"
+                },
+                "-3": {
+                  "text": "Pulse timing fragmented"
+                },
+                "-4": {
+                  "text": "Pulse timing missing"
+                },
+                "-5": {
+                  "text": "Pulse artifacts / changing HR"
+                },
+                "-6": {
+                  "text": "No consistent breathing signal"
+                },
+                "-7": {
+                  "text": "Analysis unavailable"
+                },
+                "-8": {
+                  "text": "Unsupported firmware"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 22,
+      "title": "SpO\u2082",
+      "description": "Device-calculated SpO2 from Harvard 41.17.4.0 history byte 86. Zero and firmware error codes are not percentages. 98 is withheld because the firmware can also return 98 for missing optical DC. Latest usable reading within 24 hours; see measurement age. Accuracy has not been checked with an independent sensor.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_spo2_percent and on(device) (whoop_spo2_ready == 1) and on(device) (time() - whoop_spo2_observed_timestamp_seconds <= 86400)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#BFB8F5"
+          },
+          "noValue": "Awaiting WHOOP reading",
+          "unit": "percent",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 23,
+      "title": "Signal quality",
+      "description": "Signal checks are engineering screens, not a medical confidence score. A successful screen does not establish accuracy.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_respiratory_rate_ready",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Analysis unavailable",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Insufficient signal",
+                  "color": "#A3B0A6"
+                },
+                "1": {
+                  "text": "Checks passed \u00b7 unvalidated",
+                  "color": "#D3F5AE"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 24,
+      "title": "Oxygen age",
+      "description": "Device-calculated SpO2 from Harvard 41.17.4.0 history byte 86. Zero and firmware error codes are not percentages. 98 is withheld because the firmware can also return 98 for missing optical DC. Latest usable reading within 24 hours; see measurement age. Accuracy has not been checked with an independent sensor.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 10,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_spo2_observed_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#A3B0A6"
+          },
+          "noValue": "No usable reading yet",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 30,
+      "title": "Strain \u00b7 recorded day",
+      "description": "Fraction of elapsed local day covered by consecutive valid HR records. Missing intervals are excluded.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_strain_coverage_ratio",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 31,
+      "title": "Cardio load \u00b7 Edwards",
+      "description": "Life cardio strain, not WHOOP strain: Edwards load from recorded heart rate and your configured maximum, mapped logarithmically to 0\u201321. See coverage; missing time contributes no load. Set maximum HR in Life. No age-based defaults. See docs/SCORING.md.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 14,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_cardio_load",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 32,
+      "title": "Sleep \u00b7 logged duration",
+      "description": "Self-reported sleep duration minus awake time / your configured sleep target, capped at 100%. This is a duration score, not inferred sleep quality or sleep stages. Log sleep in Life. Latest completed session expires after 36 hours.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_duration_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 37,
+      "title": "Sleep \u00b7 measurement age",
+      "description": "Time since the most recent completed, self-reported sleep session. Results expire after 36 hours.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 14,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - life_sleep_end_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 1,
+      "title": "Battery \u00b7 verified",
+      "description": "Only cross-checked readings less than ten minutes old are displayed. No data means unknown, not zero battery.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "last_over_time(whoop_battery_percent[1h]) and on(device) (time() - whoop_battery_last_observed_timestamp_seconds < 600)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 2,
+      "title": "Last strap traffic",
+      "description": "Age of phone-observed strap traffic. Delayed uploads do not make old readings fresh.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 18,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_last_received_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 3,
+      "title": "Backend queue",
+      "description": "Backend outgoing samples. The iPhone's separate queue appears in the Life app.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 18,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_export_pending_samples",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 4,
+      "title": "Export review",
+      "description": "Rejected or older-than-window samples and timestamp conflicts stay archived; they are never retimestamped.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 18,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_export_blocked_samples + whoop_export_conflicts",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 5,
+      "title": "Heart rate",
+      "description": "Original observation timestamps. Live points use phone receipt time. Graphs are visualization, not inputs for HRV calculations.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 22,
+        "w": 16,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_heart_rate_bpm",
+          "legendFormat": "Heart rate",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#FF8F78"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "bpm"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 6,
+      "title": "Battery history",
+      "description": "Only matching standard/custom readings are exported. Gaps are kept visible.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 22,
+        "w": 8,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_battery_percent",
+          "legendFormat": "Battery",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#D3F5AE"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 7,
+      "title": "Export queue",
+      "description": "",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_export_pending_samples",
+          "legendFormat": "Queued samples",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#BFB8F5"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Last battery cross-check",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 30,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_battery_last_observed_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 9,
+      "title": "Backend records",
+      "description": "",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 30,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_archived_records",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 10,
+      "title": "Collection and validation",
+      "type": "text",
+      "gridPos": {
+        "x": 12,
+        "y": 34,
+        "w": 12,
+        "h": 3
+      },
+      "options": {
+        "mode": "markdown",
+        "content": "**Life \u00b7 WHOOP**\n\nStored history sync is enabled for validated transfer layouts. HRV uses firmware-decoded pulse intervals and conservative five-minute quality checks. Physiological accuracy has not been compared with ECG. Sleep duration is self-reported; strain is an independent Life cardio-load score. Prometheus alert rules are installed; external notifications are not configured."
+      }
+    },
+    {
+      "id": 11,
+      "title": "Wrist skin temperature",
+      "description": "WHOOP 4 skin sensor, decoded from Harvard 41.17.4.0 firmware. Signed word at frame offset 76 / 10 \u00b0C. Sensor error values and readings older than ten minutes are hidden. No user calibration. Measures skin, not core body temperature. A fixed offset does not convert one into the other.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 37,
+        "w": 6,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "last_over_time(whoop_skin_temperature_celsius[10m]) and on(device,decoder) (last_over_time(whoop_skin_temperature_valid[10m]) == 1) and on(device) (whoop_skin_temperature_decoder_supported == 1)",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting sensor reading",
+          "unit": "celsius",
+          "decimals": 1
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 12,
+      "title": "Skin temperature history",
+      "description": "Original history-record time. Gaps mean missing or invalid sensor readings. Firmware decoder versions remain separate.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 37,
+        "w": 18,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_skin_temperature_celsius and on(device,decoder) (whoop_skin_temperature_valid == 1) and (time() - timestamp(whoop_skin_temperature_celsius) < 5)",
+          "legendFormat": "Skin temperature",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#F7C57A"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Temperature sensor diagnostics",
+      "description": "Raw words from v24 history, shown without unit conversion. Offset 76 is now identified as skin temperature in tenths \u00b0C for the supported firmware; other channels retain raw labels.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_temperature_candidate_raw",
+          "legendFormat": "Field {{field}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 14,
+      "title": "HRV \u00b7 last qualifying",
+      "description": "Last qualifying five-minute PPG RMSSD from the past 24 hours, shown with its original measurement age. This is not a live reading or whole-night HRV. Requires 98\u2013102% pulse coverage, continuous history, artifact and adjacent-pair checks. The live readiness metric still expires after 15 minutes. Not ECG-validated.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 52,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_hrv_last_qualified_rmssd_ms and on(device,algorithm) (time() - whoop_hrv_last_qualified_end_timestamp_seconds < 86400)",
+          "legendFormat": "RMSSD",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "fixed",
+            "fixedColor": "#D3F5AE"
+          },
+          "noValue": "No qualifying reading in 24h",
+          "unit": "ms",
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 15,
+      "title": "HRV \u00b7 latest pulse coverage",
+      "description": "Pulse interval duration / 300 seconds for the latest analyzed window. Acceptance requires 98\u2013102%. This is not a medical confidence score.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 52,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "100 * whoop_hrv_latest_window_coverage_ratio",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 16,
+      "title": "HRV \u00b7 measurement age",
+      "description": "Age of the qualifying five-minute measurement window.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 52,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_hrv_last_qualified_end_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 17,
+      "title": "HRV history \u00b7 five-minute RMSSD",
+      "description": "PPG-derived RMSSD over five minutes, rounded to whole milliseconds for display. At least 98% pulse duration coverage, no history gaps, artifact and adjacent-pair checks. Latest qualifying window expires after 15 minutes. Not ECG-validated. Scrape time is analysis observation time; the measurement window end is shown separately.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 56,
+        "w": 24,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_hrv_rmssd_ms and on(device) (whoop_hrv_ready == 1) and on(device) (time() - whoop_hrv_window_end_timestamp_seconds <= 900)",
+          "legendFormat": "RMSSD",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 25,
+      "title": "Breathing history \u00b7 estimated",
+      "description": "Estimated respiratory modulation of pulse intervals, not a device-reported breathing rate. At least 90 contiguous seconds, coverage and artifact checks, spectral/autocorrelation agreement and stable frequency. Accuracy has not been validated against a respiratory reference. Hidden after 15 minutes. Analysis scrape time is distinct from measurement time.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 63,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_respiratory_rate_estimated_breaths_per_minute and on(device) (whoop_respiratory_rate_ready == 1) and on(device) (time() - whoop_respiratory_rate_window_end_timestamp_seconds <= 900)",
+          "legendFormat": "Estimated breathing rate",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "suffix: breaths/min"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 26,
+      "title": "Oxygen history \u00b7 device calculation",
+      "description": "Device-calculated SpO2 from Harvard 41.17.4.0 history byte 86. Zero and firmware error codes are not percentages. 98 is withheld because the firmware can also return 98 for missing optical DC. Latest usable reading within 24 hours; see measurement age. Accuracy has not been checked with an independent sensor.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 63,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_spo2_percent and on(device) (whoop_spo2_ready == 1) and on(device) (time() - whoop_spo2_observed_timestamp_seconds <= 86400)",
+          "legendFormat": "Device SpO\u2082",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "percent"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 27,
+      "title": "Breathing \u00b7 contiguous signal duration",
+      "description": "Longest segment when none reach 90 seconds; otherwise the latest candidate segment. Passing duration alone is insufficient.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 70,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_respiratory_rate_contiguous_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 28,
+      "title": "Breathing \u00b7 measurement age",
+      "description": "Last qualifying pulse-derived breathing estimate from the past 24 hours, with its original measurement age. Requires at least 90 contiguous seconds, 98\u2013102% pulse coverage, artifact checks and consistent spectral/autocorrelation estimates. No computed device breathing-rate field has been identified. More recording time alone does not guarantee a qualifying signal. Not reference-validated.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 70,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "time() - whoop_respiratory_rate_last_qualified_end_timestamp_seconds",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 29,
+      "title": "Oxygen \u00b7 device status",
+      "description": "Raw diagnostic result code. 0 means no computed value. 98 is ambiguous and never published as saturation. Other flags stay unavailable. See docs/RESPIRATION-OXYGEN.md.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 70,
+        "w": 8,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "whoop_spo2_raw_code",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "Not measured"
+                },
+                "98": {
+                  "text": "Ambiguous firmware result"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 33,
+      "title": "Sleeping heart rate",
+      "description": "Median HR during your logged sleep interval, requires 80% recorded coverage and 30 minutes.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 18,
+        "y": 74,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_heart_rate_bpm",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "bpm"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 34,
+      "title": "Sleeping HRV",
+      "description": "Median qualifying five-minute RMSSD windows inside logged sleep. At least three windows and 50% union coverage.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 78,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_hrv_ms",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Insufficient overnight coverage",
+          "unit": "ms"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 35,
+      "title": "Sleeping wrist temperature",
+      "description": "Median firmware-decoded wrist temperature during logged sleep, requires 80% recorded coverage.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 6,
+        "y": 78,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_temperature_celsius",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Awaiting recorded data",
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 36,
+      "title": "Wrist temperature \u00b7 baseline change",
+      "description": "Difference from the median of at least seven prior nights within 28 days. At most one sleep of at least three hours per date.",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 78,
+        "w": 6,
+        "h": 4
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_temperature_delta_celsius",
+          "legendFormat": "{{source}}",
+          "range": false,
+          "instant": true
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "Needs 7 prior logged nights",
+          "unit": "celsius"
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "colorMode": "value",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 38,
+      "title": "Strain history \u00b7 recorded load",
+      "description": "Life cardio strain, not WHOOP strain: Edwards load from recorded heart rate and your configured maximum, mapped logarithmically to 0\u201321. See coverage; missing time contributes no load. Set maximum HR in Life. No age-based defaults. See docs/SCORING.md. Each point is the accumulated daily load at analysis time. Late backfill updates the current total without rewriting previous scrapes.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 82,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_strain_score and on(device) (life_strain_ready == 1)",
+          "legendFormat": "{{source}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "suffix: / 21"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    },
+    {
+      "id": 39,
+      "title": "Sleep history \u00b7 reported duration",
+      "description": "Self-reported sleep duration minus awake time / your configured sleep target, capped at 100%. This is a duration score, not inferred sleep quality or sleep stages. Log sleep in Life. Latest completed session expires after 36 hours.",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "life-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 82,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "life-prometheus"
+          },
+          "expr": "life_sleep_duration_seconds",
+          "legendFormat": "{{source}}",
+          "range": true,
+          "instant": false
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "palette-classic"
+          },
+          "noValue": "No data",
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "spanNulls": false,
+            "showPoints": "auto"
+          },
+          "unit": "s"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      }
+    }
+  ]
+}
