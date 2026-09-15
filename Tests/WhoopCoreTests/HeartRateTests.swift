@@ -53,4 +53,28 @@ final class HeartRateTests: XCTestCase {
         XCTAssertEqual(rows.map { $0.at.timeIntervalSince1970 }, [100, 101, 105, 110])
         XCTAssertEqual(rows.map(\.bpm), [72, 72, 80, 72])
     }
+    func testChartProjectionPreservesSourceQualityAndOriginalTimes() throws {
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { for suffix in ["", "-wal", "-shm"] { try? FileManager.default.removeItem(atPath: url.path + suffix) } }
+        let store = try CaptureStore(url: url)
+        var live = capture(100, bpm: 71)
+        live.rawBase64 = Data(repeating: 42, count: 4096).base64EncodedString()
+        live.intervalWords = [900, 901]; live.acceleration = [0.1, 0.2, 0.3]
+        var historical = capture(500, bpm: 65, quality: "historical_intervals_unverified")
+        historical.source = "history"; historical.sampleAt = 110
+        var missingTime = historical; missingTime.id = "missing-time"; missingTime.sampleAt = nil
+        var wrongSourceQuality = capture(115, quality: "historical_intervals_unverified")
+        wrongSourceQuality.id = "wrong-quality"
+        let offWrist = capture(120, quality: "off_wrist"), invalid = capture(125, bpm: 0)
+        try store.insert([live, historical, missingTime, wrongSourceQuality, offWrist, invalid])
+        try store.acknowledge([live.id, historical.id])
+        let reader = try CaptureStore(url: url, readOnly: true)
+        let readings = try reader.heartRateReadings(since: Date(timeIntervalSince1970: 90), through: Date(timeIntervalSince1970: 600))
+        XCTAssertEqual(readings.map(\.id), [live.id, historical.id])
+        XCTAssertEqual(readings.map(\.bpm), [71, 65])
+        XCTAssertEqual(readings.map { $0.at.timeIntervalSince1970 }, [100, 110])
+        XCTAssertEqual(readings.map(\.isHistorical), [false, true])
+        XCTAssertEqual(try reader.heartRateReadings(since: Date(timeIntervalSince1970: 90), through: Date(timeIntervalSince1970: 600), limit: 0), [])
+        XCTAssertEqual(try store.pending().map(\.id), [missingTime.id, wrongSourceQuality.id, offWrist.id, invalid.id])
+    }
 }

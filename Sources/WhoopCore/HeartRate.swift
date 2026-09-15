@@ -7,12 +7,18 @@ public struct HeartRateReading: Identifiable, Equatable, Sendable {
     public let isHistorical: Bool
 
     public init?(capture: Capture) {
-        let historical = capture.source == "history" && capture.quality == "historical_intervals_unverified"
-        let live = capture.source == "live_hr" && capture.quality == "live_receipt_timestamp"
-        let timestamp = historical ? capture.sampleAt : capture.receivedAt
+        self.init(id: capture.id, source: capture.source, quality: capture.quality,
+                  receivedAt: capture.receivedAt, sampleAt: capture.sampleAt, bpm: capture.hrBpm)
+    }
+    // The store projects these fields without decoding raw packets and sensor
+    // arrays. Both paths use the same eligibility and timestamp rules.
+    init?(id: String, source: String, quality: String?, receivedAt: Double, sampleAt: Double?, bpm: Int?) {
+        let historical = source == "history" && quality == "historical_intervals_unverified"
+        let live = source == "live_hr" && quality == "live_receipt_timestamp"
+        let timestamp = historical ? sampleAt : receivedAt
         guard live || historical, let timestamp, timestamp.isFinite,
-              let bpm = capture.hrBpm, (1...255).contains(bpm) else { return nil }
-        self.id = capture.id
+              let bpm, (1...255).contains(bpm) else { return nil }
+        self.id = id
         self.at = Date(timeIntervalSince1970: timestamp)
         self.bpm = bpm
         self.isHistorical = historical

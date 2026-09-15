@@ -43,6 +43,27 @@ under motion, changed pulse morphology or output gating. It checks peak order, i
 scale, continuity across calls, and a legitimate empty output. This proves the
 investigated software data path, not the physiological accuracy of the optical sensor.
 
+### Publication timing limits
+
+The offline verifier also executes the output gate and tests a proposed timing
+screen against synthetic signals and interval faults. These checks do not publish
+measurements or alter the production algorithm.
+
+- A continuous 45 bpm signal with changing pulse width produces no detector
+  flags, but its publication-phase spread exceeds one record cadence plus the
+  two-sample interpolation allowance. Pulse shape affects publication latency.
+- For a continuous 100 bpm signal, all 292 tested interior omissions and all 292
+  duplicates still fit the candidate cadence/rounding bound. In-range interval
+  alterations also fit. The separate clamp rule rejects 500 ms substitutions.
+- Executing the actual gate at `0x86862` confirms that a criterion above 0.03
+  suppresses otherwise populated interval output. This happens after peak
+  extraction; it does not restore the earlier detector cursor.
+
+A phase fit is therefore not evidence of uninterrupted beats. These are executable
+counterexamples, not acceptance criteria. A replacement continuity algorithm needs
+additional evidence about output gating and publication timing, followed by fault
+injection and raw-record replay. Its numerical results must use a new version.
+
 ## Calculation and gates
 
 `RMSSD = sqrt(mean((interval[i] - interval[i-1])²))`, in milliseconds.

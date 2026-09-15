@@ -82,7 +82,9 @@ public final class CaptureStore {
     public func heartRateReadings(since: Date, through: Date = Date(), limit: Int = 7200) throws -> [HeartRateReading] {
         var statement: OpaquePointer?
         let sql = """
-            SELECT body FROM captures WHERE json_extract(body,'$.source') IN ('live_hr','history')
+            SELECT json_extract(body,'$.id'), json_extract(body,'$.source'), json_extract(body,'$.quality'),
+                   json_extract(body,'$.receivedAt'), json_extract(body,'$.sampleAt'), json_extract(body,'$.hrBpm')
+            FROM captures WHERE json_extract(body,'$.source') IN ('live_hr','history')
             AND coalesce(json_extract(body,'$.sampleAt'),json_extract(body,'$.receivedAt')) >= ?
             AND coalesce(json_extract(body,'$.sampleAt'),json_extract(body,'$.receivedAt')) <= ?
             AND json_extract(body,'$.quality') IN ('live_receipt_timestamp','historical_intervals_unverified')
@@ -97,9 +99,12 @@ public final class CaptureStore {
         var rows: [HeartRateReading] = []
         var status = sqlite3_step(statement)
         while status == SQLITE_ROW {
-            let body = String(cString: sqlite3_column_text(statement, 0))
-            let capture = try JSONDecoder().decode(Capture.self, from: Data(body.utf8))
-            if let reading = HeartRateReading(capture: capture) { rows.append(reading) }
+            guard let id = sqlite3_column_text(statement, 0), let source = sqlite3_column_text(statement, 1),
+                  let quality = sqlite3_column_text(statement, 2), sqlite3_column_type(statement, 3) != SQLITE_NULL else { throw failure() }
+            let sampleAt: Double? = sqlite3_column_type(statement, 4) == SQLITE_NULL ? nil : sqlite3_column_double(statement, 4)
+            if let reading = HeartRateReading(id: String(cString: id), source: String(cString: source),
+                                             quality: String(cString: quality), receivedAt: sqlite3_column_double(statement, 3),
+                                             sampleAt: sampleAt, bpm: Int(sqlite3_column_int(statement, 5))) { rows.append(reading) }
             status = sqlite3_step(statement)
         }
         guard status == SQLITE_DONE else { throw failure() }

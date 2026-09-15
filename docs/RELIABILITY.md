@@ -125,6 +125,11 @@ queue, so fetching and decoding saved history does not block Bluetooth callbacks
 Only one chart read runs at a time; live points arriving during the read are kept
 when its snapshot is applied. `chart_read_slow` records reads exceeding 100 ms,
 at most once per minute, independently of the Bluetooth callback timing.
+The chart query projects only identity, source, quality, timestamps and HR. It
+does not decode full captures or their raw packets and sensor arrays. Both the
+live and stored paths share the same eligibility and timestamp rules. A synthetic
+one-hour replay verifies identical readings before and after this optimization;
+raw storage and upload acknowledgments are unchanged.
 
 The app reports delayed stored history separately from pulse quality. Grafana's
 **Stored history delay** shows the latest indexed measurement age; **Analysis queue**

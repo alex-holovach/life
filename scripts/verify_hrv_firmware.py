@@ -12,10 +12,94 @@ import struct
 from unicorn import Uc, UC_ARCH_ARM, UC_MODE_THUMB
 from unicorn.arm_const import (UC_ARM_REG_C1_C0_2, UC_ARM_REG_FPEXC, UC_ARM_REG_SP,
                               UC_ARM_REG_R0, UC_ARM_REG_R1, UC_ARM_REG_R2, UC_ARM_REG_R3,
-                              UC_ARM_REG_R4, UC_ARM_REG_LR)
+                              UC_ARM_REG_R4, UC_ARM_REG_R6, UC_ARM_REG_LR, UC_ARM_REG_PC)
 
 HASH='2c4d7a9edf90e4b39bcecda28d2cd9949bd19de533a14d31a7409b31144c309b'
 BASE=0x10028000
+
+
+def publication_limits(u):
+    """Counterexamples to a timing-only continuity rule, not a new decoder."""
+    source=0x20030000;output=0x20032000;state=0x20034000;stop=0x10029000
+    cases=[]
+    for bpm,shape,batches in [(45,'changing_width',180),(100,'sine',340)]:
+        u.mem_write(output,bytes(4096));u.mem_write(state,bytes(4096))
+        previous=None;elapsed=0;phases=[];records=[];flagged=0
+        for k in range(batches):
+            signal=[]
+            for i in range(400):
+                t=(i+100*k)/104
+                value=math.sin(2*math.pi*bpm/60*t)
+                if shape=='changing_width':
+                    power=1+4*(.5+.5*math.sin(t*.05))
+                    value=math.copysign(abs(value)**power,value)
+                signal.append(value)
+            u.mem_write(source,struct.pack('<400f',*signal));u.reg_write(UC_ARM_REG_SP,0x2007f000)
+            for reg,value in [(UC_ARM_REG_R0,source),(UC_ARM_REG_R1,400),(UC_ARM_REG_R2,output),
+                              (UC_ARM_REG_R3,state),(UC_ARM_REG_LR,stop|1)]:u.reg_write(reg,value)
+            u.emu_start((BASE+0x8a374)|1,stop,count=500000)
+            assert u.reg_read(UC_ARM_REG_PC)==stop, 'Peak detector exceeded instruction budget'
+            n=struct.unpack('<I',u.mem_read(output,4))[0]
+            intervals=list(struct.unpack('<'+'f'*n,u.mem_read(output+4,n*4)))
+            flagged+=bool(u.mem_read(output+0xb4,1)[0])
+            records.append([int(x*1000+.5) for x in intervals])
+            if not n:continue
+            peaks=[x+100*k for x in struct.unpack('<'+'I'*(n+1),u.mem_read(output+0x3c,4*(n+1)))]
+            if previous is not None:assert peaks[0]==previous
+            previous=peaks[-1];elapsed+=sum(intervals)
+            if k>=15:phases.append(k*100/104-elapsed)
+        case=dict(bpm=bpm,shape=shape,batches=batches,flagged_batches=flagged,
+                  phase_spread_seconds=max(phases)-min(phases))
+        if shape=='changing_width':
+            # All emitted endpoints are continuous, yet morphology changes the
+            # publication delay by more than cadence plus interpolation alone.
+            assert flagged==0
+            assert case['phase_spread_seconds']>102/104
+        else:
+            rows=records[15:327]
+            def phase_compatible(rows):
+                total=0;count=0;phases=[]
+                for k,words in enumerate(rows):
+                    total+=sum(words)/1000;count+=len(words)
+                    if words:phases.append(k*100/104-total)
+                return max(phases)-min(phases)<=102/104+count*.0005
+            assert phase_compatible(rows)
+            faults={}
+            for kind in ['withheld','duplicate','clipped','corrupted']:
+                tested=compatible=range_valid=0
+                for i in range(10,len(rows)-10):
+                    if not rows[i]:continue
+                    changed=[list(r) for r in rows]
+                    if kind=='withheld':changed[i].pop(0)
+                    elif kind=='duplicate':changed[i].append(changed[i][0])
+                    elif kind=='clipped':changed[i][0]=500
+                    else:changed[i][0]+=60
+                    tested+=1;fits=phase_compatible(changed);compatible+=fits
+                    range_valid+=fits and all(333<x<2000 and x!=500 for r in changed for x in r)
+                faults[kind]=dict(injections=tested,phase_compatible=compatible,
+                                  phase_and_range_compatible=range_valid)
+            assert faults['withheld']['phase_and_range_compatible']>0
+            assert faults['duplicate']['phase_and_range_compatible']>0
+            assert faults['clipped']['phase_and_range_compatible']==0
+            assert faults['corrupted']['phase_and_range_compatible']>0
+            case['faults']=faults
+        cases.append(case)
+    # Execute the actual output gate on controlled intermediate state. The full
+    # caller zeros the output before this branch; output suppression does not
+    # undo the earlier peak-detector cursor advancement.
+    gating=[];internal=0x20014000;published=0x20018000
+    for criterion in [0.0,0.029,0.03,0.031,1.0]:
+        u.mem_write(internal,bytes(4096));u.mem_write(published,bytes(4096))
+        u.mem_write(internal+0xcfc,struct.pack('<I3f',3,.8,.81,.79))
+        u.mem_write(internal+0xe54,struct.pack('<f',criterion))
+        u.reg_write(UC_ARM_REG_R4,published);u.reg_write(UC_ARM_REG_R6,internal)
+        u.emu_start((BASE+0x86862)|1,BASE+0x86878,count=500)
+        assert u.reg_read(UC_ARM_REG_PC)==BASE+0x86878, 'Output gate exceeded instruction budget'
+        n=u.mem_read(published+0xe28,1)[0]
+        assert n==(3 if criterion<.03 else 0)
+        gating.append(dict(internal_criterion=criterion,published_intervals=n))
+    return dict(synthetic_cases=cases,output_gate=gating,
+                conclusion='Phase compatibility cannot prove uninterrupted intervals. No production quality gate changed.')
 
 
 def verify(binary):
@@ -95,6 +179,7 @@ def verify(binary):
                                        publication_phase_spread_seconds=phase_spread))
     return dict(firmware_sha256=HASH,packing=packing,sliding_windows=windows,
                 clean_signal_cases=clean_signal_cases,
+                publication_limits=publication_limits(u),
                 conclusion='Milliseconds; chronological; no repeated interval across synthetic batches. Not an ECG validation.')
 
 
